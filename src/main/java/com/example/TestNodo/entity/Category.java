@@ -1,7 +1,10 @@
 package com.example.TestNodo.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,11 +39,12 @@ public class Category {
 
     private String modifiedBy;
 
-    @OneToMany(mappedBy = "category",fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "category", fetch = FetchType.LAZY)
     private List<CategoryImage> images = new ArrayList<>();
 
     @OneToMany(mappedBy = "category")
     private List<ProductCategory> productCategories;
+
 
     // Getters and Setters
     public Long getId() {

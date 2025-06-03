@@ -1,12 +1,20 @@
 package com.example.TestNodo.service;
 
-import com.example.TestNodo.dto.*;
-import com.example.TestNodo.entity.*;
+import com.example.TestNodo.dto.CategoryDTO;
+import com.example.TestNodo.dto.ImageDTO;
+import com.example.TestNodo.dto.Pagination;
+import com.example.TestNodo.dto.PaginationResponse;
+import com.example.TestNodo.entity.Category;
+import com.example.TestNodo.entity.CategoryImage;
 import com.example.TestNodo.mapper.CategoryMapper;
-import com.example.TestNodo.repository.*;
+import com.example.TestNodo.repository.CategoryImageRepository;
+import com.example.TestNodo.repository.CategoryRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
-import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
@@ -17,12 +25,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.ByteArrayOutputStream; // Thêm import
-import java.io.IOException; // Thêm import cho IOException
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service

@@ -3,7 +3,6 @@ package com.example.TestNodo.mapper;
 import com.example.TestNodo.dto.CategoryDTO;
 import com.example.TestNodo.dto.ImageDTO;
 import com.example.TestNodo.entity.Category;
-import com.example.TestNodo.entity.CategoryImage;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;

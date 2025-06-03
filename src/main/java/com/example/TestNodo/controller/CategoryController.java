@@ -62,6 +62,7 @@ public class CategoryController {
         PaginationResponse<CategoryDTO> response = categoryService.searchCategories(name, categoryCode, createdFrom, createdTo, page, size);
         return ResponseEntity.ok(response);
     }
+
     @GetMapping("/search/{id}")
     public ResponseEntity<CategoryDTO> getCategoryById(@PathVariable Long id) {
         CategoryDTO category = categoryService.getCategoryById(id);

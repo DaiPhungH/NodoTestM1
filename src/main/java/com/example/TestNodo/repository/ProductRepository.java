@@ -22,6 +22,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             "AND (:createdFrom IS NULL OR p.createdDate >= :createdFrom) " +
             "AND (:createdTo IS NULL OR p.createdDate <= :createdTo) " +
             "AND (:categoryId IS NULL OR pc.category.id = :categoryId AND pc.status = '1')")
-    Page<Product> search(String name,String productCode,LocalDateTime createdFrom, LocalDateTime createdTo, Long categoryId, Pageable pageable);
+    Page<Product> search(String name, String productCode, LocalDateTime createdFrom, LocalDateTime createdTo, Long categoryId, Pageable pageable);
 
 }
