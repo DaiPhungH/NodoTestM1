@@ -50,6 +50,28 @@ public class CategoryService {
         this.imageService = imageService;
     }
 
+    private List<ImageDTO> toImageDTOs(List<? extends Object> images) {
+        if (images == null) return List.of();
+        return images.stream()
+                .filter(img -> {
+                    try {
+                        return (String) img.getClass().getMethod("getStatus").invoke(img) != null
+                                && ((String) img.getClass().getMethod("getStatus").invoke(img)).equals("1");
+                    } catch (Exception e) {
+                        return false;
+                    }
+                })
+                .map(img -> {
+                    ImageDTO imgDTO = new ImageDTO();
+                    try {
+                        imgDTO.setName((String) img.getClass().getMethod("getName").invoke(img));
+                        imgDTO.setUrl((String) img.getClass().getMethod("getUrl").invoke(img));
+                        imgDTO.setUuid((String) img.getClass().getMethod("getUuid").invoke(img));
+                    } catch (Exception ignored) {}
+                    return imgDTO;
+                }).collect(Collectors.toList());
+    }
+
     @Transactional
     public CategoryDTO createCategory(@Valid CategoryDTO categoryDTO, List<MultipartFile> images) {
         if (categoryRepository.existsByCategoryCode(categoryDTO.getCategoryCode())) {
@@ -81,13 +103,7 @@ public class CategoryService {
         }
 
         CategoryDTO result = categoryMapper.toDTO(category);
-        result.setImages(categoryImages.stream().map(img -> {
-            ImageDTO imgDTO = new ImageDTO();
-            imgDTO.setName(img.getName());
-            imgDTO.setUrl(img.getUrl());
-            imgDTO.setUuid(img.getUuid());
-            return imgDTO;
-        }).collect(Collectors.toList()));
+        result.setImages(toImageDTOs(categoryImages));
         return result;
     }
 
@@ -122,15 +138,7 @@ public class CategoryService {
         }
 
         CategoryDTO result = categoryMapper.toDTO(category);
-        result.setImages(category.getImages().stream()
-                .filter(img -> img.getStatus() != null && img.getStatus().equals("1"))
-                .map(img -> {
-                    ImageDTO imgDTO = new ImageDTO();
-                    imgDTO.setName(img.getName());
-                    imgDTO.setUrl(img.getUrl());
-                    imgDTO.setUuid(img.getUuid());
-                    return imgDTO;
-                }).collect(Collectors.toList()));
+        result.setImages(toImageDTOs(category.getImages()));
         return result;
     }
 
@@ -153,20 +161,7 @@ public class CategoryService {
                 PageRequest.of(page, size));
         List<CategoryDTO> categoryDTOs = categoryPage.getContent().stream().map(category -> {
             CategoryDTO dto = categoryMapper.toDTO(category);
-            List<CategoryImage> images = category.getImages();
-            if (images != null) {
-                dto.setImages(images.stream()
-                        .filter(img -> img.getStatus() != null && img.getStatus().equals("1"))
-                        .map(img -> {
-                            ImageDTO imgDTO = new ImageDTO();
-                            imgDTO.setName(img.getName());
-                            imgDTO.setUrl(img.getUrl());
-                            imgDTO.setUuid(img.getUuid());
-                            return imgDTO;
-                        }).collect(Collectors.toList()));
-            } else {
-                dto.setImages(List.of());
-            }
+            dto.setImages(toImageDTOs(category.getImages()));
             return dto;
         }).collect(Collectors.toList());
 
@@ -246,20 +241,7 @@ public class CategoryService {
                         messageSource.getMessage("category.not.found", null, LocaleContextHolder.getLocale())
                 ));
         CategoryDTO dto = categoryMapper.toDTO(category);
-        List<CategoryImage> images = category.getImages();
-        if (images != null) {
-            dto.setImages(images.stream()
-                    .filter(img -> img.getStatus() != null && img.getStatus().equals("1"))
-                    .map(img -> {
-                        ImageDTO imgDTO = new ImageDTO();
-                        imgDTO.setName(img.getName());
-                        imgDTO.setUrl(img.getUrl());
-                        imgDTO.setUuid(img.getUuid());
-                        return imgDTO;
-                    }).collect(Collectors.toList()));
-        } else {
-            dto.setImages(List.of());
-        }
+        dto.setImages(toImageDTOs(category.getImages()));
         return dto;
     }
 }

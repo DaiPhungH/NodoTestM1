@@ -44,13 +44,14 @@ public class ProductService {
     private final ProductCategoryRepository productCategoryRepository;
     private final ProductImageRepository productImageRepository;
     private final ProductMapper productMapper;
+    private final ImageService imageService;
     private final CategoryMapper categoryMapper;
     private final MessageSource messageSource;
 
     @Autowired
     public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository,
                           ProductCategoryRepository productCategoryRepository, ProductImageRepository productImageRepository,
-                          ProductMapper productMapper, CategoryMapper categoryMapper, MessageSource messageSource) {
+                          ProductMapper productMapper, CategoryMapper categoryMapper, MessageSource messageSource, ImageService imageService) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
         this.productCategoryRepository = productCategoryRepository;
@@ -58,6 +59,7 @@ public class ProductService {
         this.productMapper = productMapper;
         this.categoryMapper = categoryMapper;
         this.messageSource = messageSource;
+        this.imageService = imageService;
     }
 
     @Transactional
@@ -82,8 +84,17 @@ public class ProductService {
         }).collect(Collectors.toList());
         product.setImages(productImages);
 
-        // Handle categories
-        List<ProductCategory> productCategories = categoryIds.stream().map(categoryId -> {
+        // Handle categories (refactored)
+        product.setProductCategories(createProductCategories(product, categoryIds));
+
+        productRepository.save(product);
+
+        return toProductDTO(product);
+    }
+
+    // Refactored method for creating ProductCategory list
+    private List<ProductCategory> createProductCategories(Product product, List<Long> categoryIds) {
+        return categoryIds.stream().map(categoryId -> {
             Category category = categoryRepository.findByIdWithImages(categoryId)
                     .orElseThrow(() -> new EntityNotFoundException(messageSource.getMessage("category.not.found", null, LocaleContextHolder.getLocale())));
             ProductCategory pc = new ProductCategory();
@@ -93,11 +104,6 @@ public class ProductService {
             pc.setStatus("1");
             return pc;
         }).collect(Collectors.toList());
-        product.setProductCategories(productCategories);
-
-        productRepository.save(product);
-
-        return toProductDTO(product);
     }
 
     @Transactional
@@ -119,45 +125,40 @@ public class ProductService {
 
         // Update images
         if (images != null && !images.isEmpty()) {
-            product.getImages().forEach(img -> img.setStatus("0"));
-            List<ProductImage> newImages = images.stream().map(file -> {
-                ProductImage image = new ProductImage();
-                image.setName(file.getOriginalFilename());
-                image.setUrl("/images/products/" + UUID.randomUUID() + file.getOriginalFilename());
-                image.setUuid(UUID.randomUUID().toString());
-                image.setStatus("1");
-                image.setProduct(product);
-                return image;
-            }).collect(Collectors.toList());
-            product.getImages().addAll(newImages);
+            imageService.updateProductImages(images, product);
         }
 
-        // Update categories
+        // Update categories (refactored)
         if (categoryIds != null) {
-            product.getProductCategories().forEach(pc -> pc.setStatus("0"));
-            categoryIds.forEach(categoryId -> {
-                Category category = categoryRepository.findByIdWithImages(categoryId)
-                        .orElseThrow(() -> new EntityNotFoundException(messageSource.getMessage("category.not.found", null, LocaleContextHolder.getLocale())));
-                ProductCategory existing = product.getProductCategories().stream()
-                        .filter(pc -> pc.getStatus().equals("0") && pc.getCategory().getId().equals(categoryId))
-                        .findFirst().orElse(null);
-                if (existing != null) {
-                    existing.setStatus("1");
-                    existing.setModifiedDate(LocalDateTime.now());
-                } else {
-                    ProductCategory pc = new ProductCategory();
-                    pc.setProduct(product);
-                    pc.setCategory(category);
-                    pc.setCreatedDate(LocalDateTime.now());
-                    pc.setStatus("1");
-                    product.getProductCategories().add(pc);
-                }
-            });
+            updateProductCategories(product, categoryIds);
         }
 
         productRepository.save(product);
 
         return toProductDTO(product);
+    }
+
+    // Refactored method for updating ProductCategory list
+    private void updateProductCategories(Product product, List<Long> categoryIds) {
+        product.getProductCategories().forEach(pc -> pc.setStatus("0"));
+        categoryIds.forEach(categoryId -> {
+            Category category = categoryRepository.findByIdWithImages(categoryId)
+                    .orElseThrow(() -> new EntityNotFoundException(messageSource.getMessage("category.not.found", null, LocaleContextHolder.getLocale())));
+            ProductCategory existing = product.getProductCategories().stream()
+                    .filter(pc -> pc.getStatus().equals("0") && pc.getCategory().getId().equals(categoryId))
+                    .findFirst().orElse(null);
+            if (existing != null) {
+                existing.setStatus("1");
+                existing.setModifiedDate(LocalDateTime.now());
+            } else {
+                ProductCategory pc = new ProductCategory();
+                pc.setProduct(product);
+                pc.setCategory(category);
+                pc.setCreatedDate(LocalDateTime.now());
+                pc.setStatus("1");
+                product.getProductCategories().add(pc);
+            }
+        });
     }
 
     @Transactional
@@ -188,6 +189,32 @@ public class ProductService {
         response.setData(productDTOs);
         response.setPagination(pagination);
         return response;
+    }
+
+    private List<ImageDTO> toImageDTOs(List<ProductImage> images) {
+        if (images == null) return List.of();
+        return images.stream()
+                .filter(img -> "1".equals(img.getStatus()))
+                .map(img -> {
+                    ImageDTO dto = new ImageDTO();
+                    dto.setName(img.getName());
+                    dto.setUrl(img.getUrl());
+                    dto.setUuid(img.getUuid());
+                    return dto;
+                }).collect(Collectors.toList());
+    }
+
+    private ProductDTO toProductDTO(Product product) {
+        ProductDTO dto = productMapper.toDTO(product);
+        dto.setImages(toImageDTOs(product.getImages()));
+        dto.setCategories(product.getProductCategories().stream()
+                .filter(pc -> pc.getStatus() != null && pc.getStatus().equals("1"))
+                .map(pc -> {
+                    Category category = categoryRepository.findByIdWithImages(pc.getCategory().getId())
+                            .orElseThrow(() -> new EntityNotFoundException(messageSource.getMessage("category.not.found", null, LocaleContextHolder.getLocale())));
+                    return categoryMapper.toDTOWithImages(category);
+                }).collect(Collectors.toList()));
+        return dto;
     }
 
     @Transactional(readOnly = true)
@@ -245,24 +272,5 @@ public class ProductService {
                 .orElseThrow(() -> new EntityNotFoundException(messageSource.getMessage("product.not.found", null, LocaleContextHolder.getLocale())));
     }
 
-    private ProductDTO toProductDTO(Product product) {
-        ProductDTO dto = productMapper.toDTO(product);
-        dto.setImages(product.getImages().stream()
-                .filter(img -> img.getStatus() != null && img.getStatus().equals("1"))
-                .map(img -> {
-                    ImageDTO imgDTO = new ImageDTO();
-                    imgDTO.setName(img.getName());
-                    imgDTO.setUrl(img.getUrl());
-                    imgDTO.setUuid(img.getUuid());
-                    return imgDTO;
-                }).collect(Collectors.toList()));
-        dto.setCategories(product.getProductCategories().stream()
-                .filter(pc -> pc.getStatus() != null && pc.getStatus().equals("1"))
-                .map(pc -> {
-                    Category category = categoryRepository.findByIdWithImages(pc.getCategory().getId())
-                            .orElseThrow(() -> new EntityNotFoundException(messageSource.getMessage("category.not.found", null, LocaleContextHolder.getLocale())));
-                    return categoryMapper.toDTOWithImages(category); // Sử dụng toDTOWithImages
-                }).collect(Collectors.toList()));
-        return dto;
-    }
+
 }
