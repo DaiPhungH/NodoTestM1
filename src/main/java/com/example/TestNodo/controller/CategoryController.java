@@ -44,13 +44,11 @@ public class CategoryController {
         CategoryDTO updatedCategory = categoryService.updateCategory(id, categoryDTO, images);
         return ResponseEntity.ok(updatedCategory);
     }
-
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
         categoryService.deleteCategory(id);
         return ResponseEntity.noContent().build();
     }
-
     @GetMapping("/search")
     public ResponseEntity<PaginationResponse<CategoryDTO>> searchCategories(
             @RequestParam(required = false) String name,
