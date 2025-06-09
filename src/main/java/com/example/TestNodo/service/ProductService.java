@@ -191,6 +191,7 @@ public class ProductService {
         return response;
     }
 
+    // Đơn giản hóa chuyển đổi ảnh cho ProductImage
     private List<ImageDTO> toImageDTOs(List<ProductImage> images) {
         if (images == null) return List.of();
         return images.stream()
