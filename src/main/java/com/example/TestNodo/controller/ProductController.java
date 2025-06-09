@@ -77,11 +77,11 @@ public class ProductController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdTo,
             @RequestParam(required = false) Long categoryId,
-            @RequestParam(defaultValue = "vi") String lang) throws Exception {
+            @RequestParam(defaultValue = "en") String lang) throws Exception {
         byte[] excelData = productService.exportProductsToExcel(name, productCode, createdFrom, createdTo, categoryId, lang);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        headers.setContentDispositionFormData("attachment", "products.xlsx");
+        headers.setContentDispositionFormData("attachment", "Products.xlsx");
         return ResponseEntity.ok().headers(headers).body(excelData);
     }
 }
