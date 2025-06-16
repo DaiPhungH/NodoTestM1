@@ -34,7 +34,6 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -72,27 +71,30 @@ public class ProductService {
         product.setCreatedBy("admin");
         product.setStatus("1");
 
-        // Handle images
-        List<ProductImage> productImages = images.stream().map(file -> {
-            ProductImage image = new ProductImage();
-            image.setName(file.getOriginalFilename());
-            image.setUrl("/images/products/" + UUID.randomUUID() + file.getOriginalFilename());
-            image.setUuid(UUID.randomUUID().toString());
-            image.setStatus("1");
-            image.setProduct(product);
-            return image;
-        }).collect(Collectors.toList());
+        // Lưu product trước để sinh ID
+        try {
+            product = productRepository.save(product);
+        } catch (Exception e) {
+            throw new RuntimeException("Không thể lưu sản phẩm: " + e.getMessage(), e);
+        }
+
+        // Sử dụng ImageService để lưu hình ảnh vào thư mục cục bộ và tạo URL
+        List<ProductImage> productImages = imageService.uploadProductImages(images, product);
         product.setImages(productImages);
 
-        // Handle categories (refactored)
+        // Xử lý danh mục
         product.setProductCategories(createProductCategories(product, categoryIds));
 
-        productRepository.save(product);
+        // Lưu lại product để cập nhật quan hệ
+        try {
+            productRepository.save(product);
+        } catch (Exception e) {
+            throw new RuntimeException("Không thể lưu sản phẩm với hình ảnh và danh mục: " + e.getMessage(), e);
+        }
 
         return toProductDTO(product);
     }
 
-    // Refactored method for creating ProductCategory list
     private List<ProductCategory> createProductCategories(Product product, List<Long> categoryIds) {
         return categoryIds.stream().map(categoryId -> {
             Category category = categoryRepository.findByIdWithImages(categoryId)
@@ -123,22 +125,26 @@ public class ProductService {
         product.setModifiedDate(LocalDateTime.now());
         product.setModifiedBy("admin");
 
-        // Update images
+        // Cập nhật hình ảnh sử dụng ImageService (đã lưu vào thư mục cục bộ)
         if (images != null && !images.isEmpty()) {
             imageService.updateProductImages(images, product);
         }
 
-        // Update categories (refactored)
+        // Cập nhật danh mục
         if (categoryIds != null) {
             updateProductCategories(product, categoryIds);
         }
 
-        productRepository.save(product);
+        // Lưu product
+        try {
+            productRepository.save(product);
+        } catch (Exception e) {
+            throw new RuntimeException("Không thể cập nhật sản phẩm: " + e.getMessage(), e);
+        }
 
         return toProductDTO(product);
     }
 
-    // Refactored method for updating ProductCategory list
     private void updateProductCategories(Product product, List<Long> categoryIds) {
         product.getProductCategories().forEach(pc -> pc.setStatus("0"));
         categoryIds.forEach(categoryId -> {
@@ -271,6 +277,4 @@ public class ProductService {
                 .map(this::toProductDTO)
                 .orElseThrow(() -> new EntityNotFoundException(messageSource.getMessage("product.not.found", null, LocaleContextHolder.getLocale())));
     }
-
-
 }

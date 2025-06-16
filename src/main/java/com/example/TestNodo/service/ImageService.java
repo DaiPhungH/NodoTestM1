@@ -9,6 +9,11 @@ import com.example.TestNodo.repository.ProductImageRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -18,11 +23,26 @@ public class ImageService {
 
     private final ProductImageRepository productImageRepository;
     private final CategoryImageRepository categoryImageRepository;
+    private static final String PRODUCT_UPLOAD_DIR = "src/main/resources/static/images/products/";
+    private static final String CATEGORY_UPLOAD_DIR = "src/main/resources/static/images/categories/";
+    private static final String PRODUCT_URL_PREFIX = "/images/products/";
+    private static final String CATEGORY_URL_PREFIX = "/images/categories/";
 
     @Autowired
     public ImageService(ProductImageRepository productImageRepository, CategoryImageRepository categoryImageRepository) {
         this.productImageRepository = productImageRepository;
         this.categoryImageRepository = categoryImageRepository;
+        // Tạo thư mục lưu trữ nếu chưa tồn tại
+        createDirectories();
+    }
+
+    private void createDirectories() {
+        try {
+            Files.createDirectories(Paths.get(PRODUCT_UPLOAD_DIR));
+            Files.createDirectories(Paths.get(CATEGORY_UPLOAD_DIR));
+        } catch (IOException e) {
+            throw new RuntimeException("Không thể tạo thư mục lưu trữ ảnh: " + e.getMessage());
+        }
     }
 
     public List<ProductImage> uploadProductImages(List<MultipartFile> files, Product product) {
@@ -30,13 +50,24 @@ public class ImageService {
             return List.of();
         }
         List<ProductImage> productImages = files.stream().map(file -> {
-            ProductImage image = new ProductImage();
-            image.setName(file.getOriginalFilename());
-            image.setUrl("/images/products/" + UUID.randomUUID().toString() + file.getOriginalFilename());
-            image.setUuid(UUID.randomUUID().toString());
-            image.setStatus("1");
-            image.setProduct(product);
-            return image;
+            try {
+                // Tạo tên file duy nhất
+                String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
+                Path filePath = Paths.get(PRODUCT_UPLOAD_DIR + fileName);
+
+                // Lưu file vào thư mục
+                Files.write(filePath, file.getBytes());
+
+                ProductImage image = new ProductImage();
+                image.setName(file.getOriginalFilename());
+                image.setUrl(PRODUCT_URL_PREFIX + fileName);
+                image.setUuid(UUID.randomUUID().toString());
+                image.setStatus("1");
+                image.setProduct(product);
+                return image;
+            } catch (IOException e) {
+                throw new RuntimeException("Lỗi khi lưu ảnh sản phẩm: " + file.getOriginalFilename(), e);
+            }
         }).collect(Collectors.toList());
         return productImageRepository.saveAll(productImages);
     }
@@ -46,13 +77,24 @@ public class ImageService {
             return List.of();
         }
         List<CategoryImage> categoryImages = files.stream().map(file -> {
-            CategoryImage image = new CategoryImage();
-            image.setName(file.getOriginalFilename());
-            image.setUrl("/images/categories/" + UUID.randomUUID().toString() + file.getOriginalFilename());
-            image.setUuid(UUID.randomUUID().toString());
-            image.setStatus("1");
-            image.setCategory(category);
-            return image;
+            try {
+                // Tạo tên file duy nhất
+                String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
+                Path filePath = Paths.get(CATEGORY_UPLOAD_DIR + fileName);
+
+                // Lưu file vào thư mục
+                Files.write(filePath, file.getBytes());
+
+                CategoryImage image = new CategoryImage();
+                image.setName(file.getOriginalFilename());
+                image.setUrl(CATEGORY_URL_PREFIX + fileName);
+                image.setUuid(UUID.randomUUID().toString());
+                image.setStatus("1");
+                image.setCategory(category);
+                return image;
+            } catch (IOException e) {
+                throw new RuntimeException("Lỗi khi lưu ảnh danh mục: " + file.getOriginalFilename(), e);
+            }
         }).collect(Collectors.toList());
         return categoryImageRepository.saveAll(categoryImages);
     }

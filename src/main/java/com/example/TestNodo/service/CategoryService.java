@@ -50,26 +50,20 @@ public class CategoryService {
         this.imageService = imageService;
     }
 
-    private List<ImageDTO> toImageDTOs(List<? extends Object> images) {
-        if (images == null) return List.of();
+    private List<ImageDTO> toImageDTOs(List<CategoryImage> images) {
+        if (images == null || images.isEmpty()) {
+            return List.of();
+        }
         return images.stream()
-                .filter(img -> {
-                    try {
-                        return (String) img.getClass().getMethod("getStatus").invoke(img) != null
-                                && ((String) img.getClass().getMethod("getStatus").invoke(img)).equals("1");
-                    } catch (Exception e) {
-                        return false;
-                    }
-                })
+                .filter(img -> "1".equals(img.getStatus()))
                 .map(img -> {
                     ImageDTO imgDTO = new ImageDTO();
-                    try {
-                        imgDTO.setName((String) img.getClass().getMethod("getName").invoke(img));
-                        imgDTO.setUrl((String) img.getClass().getMethod("getUrl").invoke(img));
-                        imgDTO.setUuid((String) img.getClass().getMethod("getUuid").invoke(img));
-                    } catch (Exception ignored) {}
+                    imgDTO.setName(img.getName());
+                    imgDTO.setUrl(img.getUrl());
+                    imgDTO.setUuid(img.getUuid());
                     return imgDTO;
-                }).collect(Collectors.toList());
+                })
+                .collect(Collectors.toList());
     }
 
     @Transactional
@@ -88,10 +82,10 @@ public class CategoryService {
         try {
             category = categoryRepository.save(category);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to save category: " + e.getMessage(), e);
+            throw new RuntimeException("Không thể lưu danh mục: " + e.getMessage(), e);
         }
 
-        // Sử dụng ImageService để lưu hình ảnh
+        // Sử dụng ImageService để lưu hình ảnh vào thư mục cục bộ và tạo URL
         List<CategoryImage> categoryImages = imageService.uploadCategoryImages(images, category);
         category.setImages(categoryImages);
 
@@ -99,7 +93,7 @@ public class CategoryService {
         try {
             categoryRepository.save(category);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to save category with images: " + e.getMessage(), e);
+            throw new RuntimeException("Không thể lưu danh mục với hình ảnh: " + e.getMessage(), e);
         }
 
         CategoryDTO result = categoryMapper.toDTO(category);
@@ -127,14 +121,14 @@ public class CategoryService {
         category.setModifiedDate(LocalDateTime.now());
         category.setModifiedBy("admin");
 
-        // Sử dụng ImageService để cập nhật hình ảnh
+        // Sử dụng ImageService để cập nhật hình ảnh (lưu vào thư mục cục bộ và tạo URL mới)
         imageService.updateCategoryImages(images, category);
 
         // Lưu category
         try {
             categoryRepository.save(category);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to update category: " + e.getMessage(), e);
+            throw new RuntimeException("Không thể cập nhật danh mục: " + e.getMessage(), e);
         }
 
         CategoryDTO result = categoryMapper.toDTO(category);
@@ -223,12 +217,12 @@ public class CategoryService {
         try {
             workbook.write(out);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to write workbook to ByteArrayOutputStream: " + e.getMessage(), e);
+            throw new RuntimeException("Failed" + e.getMessage(), e);
         } finally {
             try {
                 workbook.close();
             } catch (IOException e) {
-                // Log error if needed
+                // Ghi log lỗi nếu cần
             }
         }
         return out.toByteArray();
