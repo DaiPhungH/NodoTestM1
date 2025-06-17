@@ -14,7 +14,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     boolean existsByProductCode(String productCode);
 
-    @Query("SELECT p FROM Product p " +
+    @Query("SELECT DISTINCT p FROM Product p " +
             "LEFT JOIN p.productCategories pc " +
             "WHERE p.status = '1' " +
             "AND (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))) " +

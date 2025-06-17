@@ -16,7 +16,7 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     @Query("SELECT c FROM Category c LEFT JOIN FETCH c.images WHERE c.id = :id")
     Optional<Category> findByIdWithImages(@Param("id") Long id);
 
-    @Query("SELECT c FROM Category c WHERE c.status = '1' " +
+    @Query("SELECT DISTINCT c FROM Category c WHERE c.status = '1' " +
             "AND (:name IS NULL OR c.name LIKE %:name%) " +
             "AND (:categoryCode IS NULL OR c.categoryCode = :categoryCode) " +
             "AND (:createdFrom IS NULL OR c.createdDate >= :createdFrom) " +
