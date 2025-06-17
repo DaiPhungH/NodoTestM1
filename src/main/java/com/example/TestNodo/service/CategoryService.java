@@ -82,7 +82,9 @@ public class CategoryService {
         try {
             category = categoryRepository.save(category);
         } catch (Exception e) {
-            throw new RuntimeException("Không thể lưu danh mục: " + e.getMessage(), e);
+            throw new RuntimeException(
+                    messageSource.getMessage("category.save.failed", null, LocaleContextHolder.getLocale()) + ": " + e.getMessage(), e
+            );
         }
 
         // Sử dụng ImageService để lưu hình ảnh vào thư mục cục bộ và tạo URL
@@ -93,7 +95,9 @@ public class CategoryService {
         try {
             categoryRepository.save(category);
         } catch (Exception e) {
-            throw new RuntimeException("Không thể lưu danh mục với hình ảnh: " + e.getMessage(), e);
+            throw new RuntimeException(
+                    messageSource.getMessage("category.save.with.images.failed", null, LocaleContextHolder.getLocale()) + ": " + e.getMessage(), e
+            );
         }
 
         CategoryDTO result = categoryMapper.toDTO(category);
@@ -128,7 +132,9 @@ public class CategoryService {
         try {
             categoryRepository.save(category);
         } catch (Exception e) {
-            throw new RuntimeException("Không thể cập nhật danh mục: " + e.getMessage(), e);
+            throw new RuntimeException(
+                    messageSource.getMessage("category.update.failed", null, LocaleContextHolder.getLocale()) + ": " + e.getMessage(), e
+            );
         }
 
         CategoryDTO result = categoryMapper.toDTO(category);
@@ -217,8 +223,11 @@ public class CategoryService {
         try {
             workbook.write(out);
         } catch (IOException e) {
-            throw new RuntimeException("Failed" + e.getMessage(), e);
-        } finally {
+            throw new RuntimeException(
+                    messageSource.getMessage("excel.export.failed", null, LocaleContextHolder.getLocale()) + ": " + e.getMessage(), e
+            );
+        }
+        finally {
             try {
                 workbook.close();
             } catch (IOException e) {

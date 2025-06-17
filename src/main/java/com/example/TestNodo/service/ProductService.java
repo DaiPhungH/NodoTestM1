@@ -75,7 +75,9 @@ public class ProductService {
         try {
             product = productRepository.save(product);
         } catch (Exception e) {
-            throw new RuntimeException("Không thể lưu sản phẩm: " + e.getMessage(), e);
+            throw new RuntimeException(
+                    messageSource.getMessage("product.save.failed", null, LocaleContextHolder.getLocale()) + ": " + e.getMessage(), e
+            );
         }
 
         // Sử dụng ImageService để lưu hình ảnh vào thư mục cục bộ và tạo URL
@@ -89,7 +91,9 @@ public class ProductService {
         try {
             productRepository.save(product);
         } catch (Exception e) {
-            throw new RuntimeException("Không thể lưu sản phẩm với hình ảnh và danh mục: " + e.getMessage(), e);
+            throw new RuntimeException(
+                    messageSource.getMessage("product.save.with.images.categories.failed", null, LocaleContextHolder.getLocale()) + ": " + e.getMessage(), e
+            );
         }
 
         return toProductDTO(product);
@@ -139,7 +143,9 @@ public class ProductService {
         try {
             productRepository.save(product);
         } catch (Exception e) {
-            throw new RuntimeException("Không thể cập nhật sản phẩm: " + e.getMessage(), e);
+            throw new RuntimeException(
+                    messageSource.getMessage("product.update.failed", null, LocaleContextHolder.getLocale()) + ": " + e.getMessage(), e
+            );
         }
 
         return toProductDTO(product);
