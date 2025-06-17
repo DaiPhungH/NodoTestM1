@@ -71,7 +71,6 @@ public class ProductService {
         product.setCreatedBy("admin");
         product.setStatus("1");
 
-        // Lưu product trước để sinh ID
         try {
             product = productRepository.save(product);
         } catch (Exception e) {
@@ -80,14 +79,11 @@ public class ProductService {
             );
         }
 
-        // Sử dụng ImageService để lưu hình ảnh vào thư mục cục bộ và tạo URL
         List<ProductImage> productImages = imageService.uploadProductImages(images, product);
         product.setImages(productImages);
 
-        // Xử lý danh mục
         product.setProductCategories(createProductCategories(product, categoryIds));
 
-        // Lưu lại product để cập nhật quan hệ
         try {
             productRepository.save(product);
         } catch (Exception e) {
@@ -129,7 +125,6 @@ public class ProductService {
         product.setModifiedDate(LocalDateTime.now());
         product.setModifiedBy("admin");
 
-        // Cập nhật hình ảnh sử dụng ImageService (đã lưu vào thư mục cục bộ)
         if (images != null && !images.isEmpty()) {
             imageService.updateProductImages(images, product);
         }
