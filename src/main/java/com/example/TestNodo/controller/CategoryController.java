@@ -1,11 +1,14 @@
 package com.example.TestNodo.controller;
 
 import com.example.TestNodo.dto.CategoryDTO;
-import com.example.TestNodo.dto.PaginationResponse;
 import com.example.TestNodo.service.CategoryService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -50,15 +53,14 @@ public class CategoryController {
         return ResponseEntity.noContent().build();
     }
     @GetMapping("/search")
-    public ResponseEntity<PaginationResponse<CategoryDTO>> searchCategories(
+    public Page<CategoryDTO> searchCategories(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String categoryCode,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdTo,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        PaginationResponse<CategoryDTO> response = categoryService.searchCategories(name, categoryCode, createdFrom, createdTo, page, size);
-        return ResponseEntity.ok(response);
+            @PageableDefault(page = 0, size = 10, sort = "id", direction = Sort.Direction.DESC) Pageable pageable)
+    {
+        return categoryService.searchCategories(name, categoryCode, createdFrom, createdTo, pageable);
     }
 
     @GetMapping("/search/{id}")

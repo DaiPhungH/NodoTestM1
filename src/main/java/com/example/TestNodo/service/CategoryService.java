@@ -2,8 +2,6 @@ package com.example.TestNodo.service;
 
 import com.example.TestNodo.dto.CategoryDTO;
 import com.example.TestNodo.dto.ImageDTO;
-import com.example.TestNodo.dto.Pagination;
-import com.example.TestNodo.dto.PaginationResponse;
 import com.example.TestNodo.entity.Category;
 import com.example.TestNodo.entity.CategoryImage;
 import com.example.TestNodo.mapper.CategoryMapper;
@@ -21,6 +19,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -155,29 +154,16 @@ public class CategoryService {
     }
 
     @Transactional(readOnly = true)
-    public PaginationResponse<CategoryDTO> searchCategories(String name, String categoryCode, LocalDateTime createdFrom,
-                                                            LocalDateTime createdTo, int page, int size) {
-        Page<Category> categoryPage = categoryRepository.search(name, categoryCode, createdFrom, createdTo,
-                PageRequest.of(page, size));
-        List<CategoryDTO> categoryDTOs = categoryPage.getContent().stream().map(category -> {
+    public Page<CategoryDTO> searchCategories(String name, String categoryCode, LocalDateTime createdFrom,
+                                              LocalDateTime createdTo, Pageable pageable) {
+        Page<Category> categoryPage = categoryRepository.search(name, categoryCode, createdFrom, createdTo, pageable);
+        return categoryPage.map(category -> {
             CategoryDTO dto = categoryMapper.toDTO(category);
             dto.setImages(toImageDTOs(category.getImages()));
             return dto;
-        }).collect(Collectors.toList());
-
-        Pagination pagination = new Pagination();
-        pagination.setCurrentPage(categoryPage.getNumber());
-        pagination.setPageSize(categoryPage.getSize());
-        pagination.setTotalElements(categoryPage.getTotalElements());
-        pagination.setTotalPages(categoryPage.getTotalPages());
-        pagination.setHasNext(categoryPage.hasNext());
-        pagination.setHasPrevious(categoryPage.hasPrevious());
-
-        PaginationResponse<CategoryDTO> response = new PaginationResponse<>();
-        response.setData(categoryDTOs);
-        response.setPagination(pagination);
-        return response;
+        });
     }
+
 
     @Transactional(readOnly = true)
     public byte[] exportCategoriesToExcel(String name, String categoryCode, LocalDateTime createdFrom, LocalDateTime createdTo, String lang) throws Exception {

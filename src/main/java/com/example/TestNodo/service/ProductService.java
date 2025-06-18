@@ -1,8 +1,6 @@
 package com.example.TestNodo.service;
 
 import com.example.TestNodo.dto.ImageDTO;
-import com.example.TestNodo.dto.Pagination;
-import com.example.TestNodo.dto.PaginationResponse;
 import com.example.TestNodo.dto.ProductDTO;
 import com.example.TestNodo.entity.Category;
 import com.example.TestNodo.entity.Product;
@@ -25,6 +23,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -179,24 +178,12 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public PaginationResponse<ProductDTO> searchProducts(String name, String productCode, LocalDateTime createdFrom,
-                                                         LocalDateTime createdTo, Long categoryId, int page, int size) {
-        Page<Product> productPage = productRepository.search(name, productCode, createdFrom, createdTo, categoryId, PageRequest.of(page, size));
-        List<ProductDTO> productDTOs = productPage.getContent().stream().map(this::toProductDTO).collect(Collectors.toList());
-
-        Pagination pagination = new Pagination();
-        pagination.setCurrentPage(productPage.getNumber());
-        pagination.setPageSize(productPage.getSize());
-        pagination.setTotalElements(productPage.getTotalElements());
-        pagination.setTotalPages(productPage.getTotalPages());
-        pagination.setHasNext(productPage.hasNext());
-        pagination.setHasPrevious(productPage.hasPrevious());
-
-        PaginationResponse<ProductDTO> response = new PaginationResponse<>();
-        response.setData(productDTOs);
-        response.setPagination(pagination);
-        return response;
+    public Page<ProductDTO> searchProducts(String name, String productCode, LocalDateTime createdFrom,
+                                           LocalDateTime createdTo, Long categoryId, Pageable pageable) {
+        Page<Product> productPage = productRepository.search(name, productCode, createdFrom, createdTo, categoryId, pageable);
+        return productPage.map(this::toProductDTO);
     }
+
 
     private List<ImageDTO> toImageDTOs(List<ProductImage> images) {
         if (images == null) return List.of();

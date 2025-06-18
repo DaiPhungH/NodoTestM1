@@ -1,10 +1,13 @@
 package com.example.TestNodo.controller;
 
-import com.example.TestNodo.dto.PaginationResponse;
 import com.example.TestNodo.dto.ProductDTO;
 import com.example.TestNodo.service.ProductService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -58,17 +61,17 @@ public class ProductController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<PaginationResponse<ProductDTO>> searchProducts(
+    public Page<ProductDTO> searchProducts(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String productCode,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdTo,
             @RequestParam(required = false) Long categoryId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        PaginationResponse<ProductDTO> response = productService.searchProducts(name, productCode, createdFrom, createdTo, categoryId, page, size);
-        return ResponseEntity.ok(response);
+            @PageableDefault(page = 0, size = 10, sort = "id", direction = Sort.Direction.DESC) Pageable pageable)
+        {
+        return productService.searchProducts(name, productCode, createdFrom, createdTo, categoryId, pageable);
     }
+
 
     @GetMapping("/export")
     public ResponseEntity<byte[]> exportProductsToExcel(
